@@ -1,0 +1,6 @@
+node_modules/
+backend/node_modules/
+QoSMonitorApp/node_modules/
+QoSMonitorApp/android/app/build/
+QoSMonitorApp/android/.gradle/
+.idea/
