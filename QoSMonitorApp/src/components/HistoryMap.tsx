@@ -1,10 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
-import MapView, { Heatmap, PROVIDER_GOOGLE } from 'react-native-maps';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { Map, Camera, GeoJSONSource, Layer } from '@maplibre/maplibre-react-native';
 import { DBService, MeasurementRecord } from '../db/Database';
 
 export default function HistoryMap() {
   const [points, setPoints] = useState<any[]>([]);
+  const mapRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
+
+  const handleZoomIn = async () => {
+    try {
+      if (mapRef.current && cameraRef.current) {
+        const currentZoom = await mapRef.current.getZoom();
+        cameraRef.current.zoomTo(currentZoom + 1, { duration: 300 });
+      }
+    } catch (e) {
+      console.log('Zoom in error', e);
+    }
+  };
+
+  const handleZoomOut = async () => {
+    try {
+      if (mapRef.current && cameraRef.current) {
+        const currentZoom = await mapRef.current.getZoom();
+        cameraRef.current.zoomTo(currentZoom - 1, { duration: 300 });
+      }
+    } catch (e) {
+      console.log('Zoom out error', e);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -12,52 +36,87 @@ export default function HistoryMap() {
       const validPoints = records
         .filter(r => r.latitude && r.longitude)
         .map(r => ({
-          latitude: r.latitude,
-          longitude: r.longitude,
-          weight: r.rssi ? Math.max(1, 120 + r.rssi) : 50
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [r.longitude, r.latitude]
+          },
+          properties: {
+            weight: r.rssi ? Math.max(1, 120 + r.rssi) : 50
+          }
         }));
       setPoints(validPoints);
     };
     loadData();
   }, []);
 
+  const geoJSONSource = {
+    type: 'FeatureCollection',
+    features: points
+  };
+
+  const centerCoords = points.length > 0 
+    ? [points[0].geometry.coordinates[0], points[0].geometry.coordinates[1]] 
+    : [-58.2333, -32.4833]; // Concepción del Uruguay, Entre Ríos fallback
+
   return (
     <View style={styles.container}>
-      {points.length > 0 ? (
-        <View style={styles.mapWrapper}>
-          <MapView
-            provider={PROVIDER_GOOGLE}
-            style={styles.map}
-            initialRegion={{
-              latitude: points[0].latitude,
-              longitude: points[0].longitude,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
-            }}
-          >
-            <Heatmap
-              points={points}
-              radius={50}
-              opacity={0.8}
-              gradient={{
-                colors: ['#00000000', '#3b82f6', '#22c55e', '#ef4444'],
-                startPoints: [0.01, 0.25, 0.50, 1.0],
-                colorMapSize: 256
-              }}
-            />
-          </MapView>
-          <View style={styles.banner}>
-            <Text style={styles.bannerTitle}>?? AVISO PARA LA DEMOSTRACI�N DEL TP</Text>
-            <Text style={styles.bannerText}>
-              El renderizado de los mosaicos de calles se encuentra desactivado temporalmente al no disponer de una Google Maps API Key comercial, para evitar bloqueos. El mapa de calor (Heatmap) se genera y dibuja correctamente sobre este lienzo utilizando los datos reales del GPS y las mediciones almacenadas en SQLite.
-            </Text>
-          </View>
+      <View style={styles.mapWrapper}>
+        <Map
+          ref={mapRef}
+          style={styles.map}
+          mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+          logo={false}
+          compass={true}
+        >
+          <Camera
+            ref={cameraRef}
+            zoom={points.length > 0 ? 12 : 5}
+            center={centerCoords as [number, number]}
+          />
+          {points.length > 0 && (
+            <GeoJSONSource id="heatmapSource" data={geoJSONSource as any}>
+              <Layer
+                id="heatmapLayer"
+                type="heatmap"
+                paint={{
+                  'heatmap-weight': ['get', 'weight'],
+                  'heatmap-intensity': 1,
+                  'heatmap-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['heatmap-density'],
+                    0, 'rgba(0, 0, 0, 0)',
+                    0.25, '#3b82f6',
+                    0.5, '#22c55e',
+                    1, '#ef4444'
+                  ],
+                  'heatmap-radius': 20, // <-- Radio reducido para manchas más precisas
+                  'heatmap-opacity': 0.8,
+                }}
+              />
+            </GeoJSONSource>
+          )}
+        </Map>
+
+        {/* Controles de Zoom */}
+        <View style={styles.zoomControls}>
+          <TouchableOpacity style={styles.zoomButton} onPress={handleZoomIn}>
+            <Text style={styles.zoomText}>+</Text>
+          </TouchableOpacity>
+          <View style={styles.zoomDivider} />
+          <TouchableOpacity style={styles.zoomButton} onPress={handleZoomOut}>
+            <Text style={styles.zoomText}>-</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No hay datos geolocalizados suficientes para generar el Mapa de Calor (Heatmap). Aseg�rese de encender el GPS e iniciar una nueva prueba.</Text>
+        <View style={styles.banner}>
+          <Text style={styles.bannerTitle}>⚠️ AVISO PARA LA DEMOSTRACIÓN DEL TP</Text>
+          <Text style={styles.bannerText}>
+            Se ha integrado MapLibre para el renderizado del mapa. 
+            {points.length === 0 ? " Aún no hay datos geolocalizados. Ejecute un Test con GPS para ver el Heatmap." : " El mapa de calor (Heatmap) refleja los datos del GPS y métricas almacenadas."}
+          </Text>
         </View>
-      )}
+      </View>
     </View>
   );
 }
@@ -75,7 +134,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   banner: {
     position: 'absolute',
@@ -109,5 +168,36 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  zoomControls: {
+    position: 'absolute',
+    right: 16,
+    bottom: 32,
+    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  zoomButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomDivider: {
+    height: 1,
+    backgroundColor: '#334155',
+    width: '100%',
+  },
+  zoomText: {
+    color: '#f8fafc',
+    fontSize: 24,
+    fontWeight: '300',
   }
 });

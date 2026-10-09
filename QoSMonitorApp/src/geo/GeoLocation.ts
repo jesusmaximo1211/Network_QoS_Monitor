@@ -4,10 +4,14 @@ import { PermissionsAndroid, Platform } from 'react-native';
 export class GeoService {
   static async getCurrentPosition(): Promise<GeoCoordinates | null> {
     if (Platform.OS === 'android') {
-      const hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+      let hasPermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
       if (!hasPermission) {
-        console.warn("Location permission not granted");
-        return null;
+        const status = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+        hasPermission = status === PermissionsAndroid.RESULTS.GRANTED;
+        if (!hasPermission) {
+          console.warn("Location permission not granted");
+          return null;
+        }
       }
     }
 

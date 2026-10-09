@@ -7,6 +7,7 @@ buildscript {
         ndkVersion = "26.1.10909125"
         kotlinVersion = "2.2.0"
         playServicesLocationVersion = "20.0.0"
+        ext["org.maplibre.reactnative.locationEngine"] = "default"
     }
     repositories {
         google()

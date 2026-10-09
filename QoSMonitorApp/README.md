@@ -17,7 +17,7 @@ El proyecto está construido en **React Native CLI** siguiendo una arquitectura 
     Usa `react-native-geolocation-service` para capturar la ubicación exacta en cada muestreo (tanto en primer plano como en background) y cruzar calidad vs territorio.
 5.  **Capa de Presentación y Visualización**:
     -   *Dashboard*: Estado actual detallado de la conexión.
-    -   *Heatmap*: Mapeo de la cobertura usando `react-native-maps` ponderando la intensidad de señal (RSSI).
+    -   *Heatmap*: Mapeo de la cobertura usando `@maplibre/maplibre-react-native` ponderando la intensidad de señal (RSSI).
     -   *Gráficos*: Histórico temporal de latencias y velocidades empleando `victory-native`.
 
 ## ⚙️ Decisiones de Diseño

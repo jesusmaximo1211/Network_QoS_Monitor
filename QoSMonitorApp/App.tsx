@@ -117,116 +117,132 @@ function AppContent() {
 
   const renderDashboard = () => (
     <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Estado de la Conexión</Text>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Conectado:</Text>
-          <Text style={[styles.infoValue, netInfo.isConnected ? styles.connected : styles.disconnected]}>
-            {netInfo.isConnected ? 'Sí' : 'No'}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Monitor QoS</Text>
+        <Text style={styles.headerSubtitle}>Análisis de red en tiempo real</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>Estado de la Conexión</Text>
+      <View style={styles.gridContainer}>
+        <View style={styles.gridCard}>
+          <Text style={styles.gridLabel}>Estado</Text>
+          <Text style={[styles.gridValue, netInfo.isConnected ? styles.connected : styles.disconnected]}>
+            {netInfo.isConnected ? 'Conectado' : 'Desconectado'}
           </Text>
         </View>
 
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Tipo de Red (NetInfo):</Text>
-          <Text style={styles.infoValue}>{netInfo.type?.toUpperCase() || 'Desconocido'}</Text>
+        <View style={styles.gridCard}>
+          <Text style={styles.gridLabel}>Tipo de Red</Text>
+          <Text style={styles.gridValue}>{netInfo.type?.toUpperCase() || 'Desconocido'}</Text>
         </View>
 
         {netInfo.type === 'wifi' && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>SSID (Wi-Fi):</Text>
-            <Text style={styles.infoValue}>{netInfo.details?.ssid || 'N/A'}</Text>
+          <View style={[styles.gridCard, styles.fullWidthCard]}>
+            <Text style={styles.gridLabel}>SSID (Wi-Fi)</Text>
+            <Text style={styles.gridValue}>{netInfo.details?.ssid || 'N/A'}</Text>
           </View>
         )}
 
         {netInfo.type === 'cellular' && cellularInfo && (
           <>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Operador:</Text>
-              <Text style={styles.infoValue}>{cellularInfo.operatorName || 'N/A'}</Text>
+            <View style={[styles.gridCard, styles.fullWidthCard]}>
+              <Text style={styles.gridLabel}>Operador</Text>
+              <Text style={styles.gridValue}>{cellularInfo.operatorName || 'N/A'}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Tecnología de Red:</Text>
-              <Text style={styles.infoValue}>{cellularInfo.networkType || 'N/A'} ({cellularInfo.cellTech})</Text>
+            <View style={styles.gridCard}>
+              <Text style={styles.gridLabel}>Tecnología</Text>
+              <Text style={styles.gridValue}>{cellularInfo.networkType || 'N/A'} ({cellularInfo.cellTech})</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Intensidad (RSSI):</Text>
-              <Text style={styles.infoValue}>{cellularInfo.rssi < 0 ? `${cellularInfo.rssi} dBm` : 'N/A'}</Text>
+            <View style={styles.gridCard}>
+              <Text style={styles.gridLabel}>Señal (RSSI)</Text>
+              <Text style={styles.gridValue}>{cellularInfo.rssi < 0 ? `${cellularInfo.rssi} dBm` : 'N/A'}</Text>
             </View>
           </>
         )}
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Alcanzable a Internet:</Text>
-          <Text style={styles.infoValue}>{netInfo.isInternetReachable ? 'Sí' : 'No'}</Text>
-        </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Test de Calidad (QoS)</Text>
-        
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={[styles.button, {flex: 1, marginRight: 10}, isTesting && styles.buttonDisabled]} 
-            onPress={runQoSTest}
-            disabled={isTesting || !netInfo.isConnected}
-          >
-            {isTesting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Probar Red</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.button, styles.exportButton, {flex: 1}, isExporting && styles.buttonDisabled]} 
-            onPress={handleExport}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Exportar CSV</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {Object.keys(pingStats).length > 0 && (
-          <View style={styles.resultsContainer}>
-            <Text style={styles.resultsTitle}>Ping & Latencia (TCP RTT)</Text>
-            {Object.entries(pingStats).map(([host, stats]) => (
-              <View key={host} style={styles.resultBlock}>
-                <Text style={styles.hostName}>{host}</Text>
-                <Text style={styles.statLine}>Avg: {stats.avg.toFixed(1)}ms | Jitter: {stats.jitter.toFixed(1)}ms</Text>
-                <Text style={styles.statLine}>Min: {stats.min.toFixed(0)}ms | Max: {stats.max.toFixed(0)}ms</Text>
-                <Text style={styles.statLine}>Loss: {stats.packetLoss.toFixed(0)}%</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {throughputStats && (
-          <View style={styles.resultsContainer}>
-            <Text style={styles.resultsTitle}>Throughput (Ancho de banda)</Text>
-            <View style={styles.resultBlock}>
-              <Text style={styles.statLine}>Descarga: <Text style={styles.highlight}>{throughputStats.downloadMbps.toFixed(2)} Mbps</Text></Text>
-              <Text style={styles.statLine}>Subida: <Text style={styles.highlight}>{throughputStats.uploadMbps.toFixed(2)} Mbps</Text></Text>
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity 
+          style={[styles.primaryButton, isTesting && styles.buttonDisabled]} 
+          onPress={runQoSTest}
+          disabled={isTesting || !netInfo.isConnected}
+        >
+          {isTesting ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={styles.primaryButtonText}> Analizando Red...</Text>
             </View>
-          </View>
-        )}
+          ) : (
+            <Text style={styles.primaryButtonText}>INICIAR TEST QoS</Text>
+          )}
+        </TouchableOpacity>
 
+        <TouchableOpacity 
+          style={[styles.secondaryButton, isExporting && styles.buttonDisabled]} 
+          onPress={handleExport}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <ActivityIndicator color="#38bdf8" size="small" />
+          ) : (
+            <Text style={styles.secondaryButtonText}>Exportar Resultados CSV</Text>
+          )}
+        </TouchableOpacity>
       </View>
+
+      {/* Resultados Organizados */}
+      {(Object.keys(pingStats).length > 0 || throughputStats) && (
+        <View style={styles.resultsWrapper}>
+          <Text style={styles.sectionTitle}>Resultados del Test</Text>
+          
+          {throughputStats && (
+            <View style={styles.throughputCard}>
+              <View style={styles.speedBox}>
+                <Text style={styles.speedLabel}>Descarga</Text>
+                <Text style={styles.speedValue}>{throughputStats.downloadMbps.toFixed(1)} <Text style={styles.speedUnit}>Mbps</Text></Text>
+              </View>
+              <View style={styles.speedDivider} />
+              <View style={styles.speedBox}>
+                <Text style={styles.speedLabel}>Subida</Text>
+                <Text style={styles.speedValue}>{throughputStats.uploadMbps.toFixed(1)} <Text style={styles.speedUnit}>Mbps</Text></Text>
+              </View>
+            </View>
+          )}
+
+          {Object.keys(pingStats).length > 0 && (
+            <View style={styles.pingContainer}>
+              {Object.entries(pingStats).map(([host, stats]) => (
+                <View key={host} style={styles.pingCard}>
+                  <Text style={styles.pingHost}>{host}</Text>
+                  <View style={styles.pingMetrics}>
+                    <View style={styles.pingMetricBox}>
+                      <Text style={styles.pingMetricLabel}>Latencia</Text>
+                      <Text style={styles.pingMetricValue}>{stats.avg.toFixed(0)} ms</Text>
+                    </View>
+                    <View style={styles.pingMetricBox}>
+                      <Text style={styles.pingMetricLabel}>Jitter</Text>
+                      <Text style={styles.pingMetricValue}>{stats.jitter.toFixed(0)} ms</Text>
+                    </View>
+                    <View style={styles.pingMetricBox}>
+                      <Text style={styles.pingMetricLabel}>Pérdida</Text>
+                      <Text style={[styles.pingMetricValue, stats.packetLoss > 0 ? styles.lossWarning : null]}>
+                        {stats.packetLoss.toFixed(0)}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+      <StatusBar barStyle="light-content" backgroundColor="#0B1120" />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Network QoS Monitor</Text>
-      </View>
-
       <View style={styles.contentArea}>
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'map' && <HistoryMap />}
@@ -268,129 +284,206 @@ export default function App() {
 const styles = StyleSheet.create({
   provider: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#0B1120',
   },
   container: {
     flex: 1,
+    backgroundColor: '#0B1120',
   },
   scroll: {
-    padding: 20,
+    padding: 24,
     paddingBottom: 40,
   },
   header: {
+    marginTop: 10,
     marginBottom: 30,
-    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#38bdf8',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    letterSpacing: -0.5,
   },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
+  headerSubtitle: {
+    fontSize: 15,
+    color: '#94A3B8',
+    marginTop: 4,
   },
-  cardTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#f8fafc',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-    paddingBottom: 10,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
-  infoRow: {
+  gridContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  gridCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 16,
+    width: '48%',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
-  infoLabel: {
-    fontSize: 16,
-    color: '#94a3b8',
+  fullWidthCard: {
+    width: '100%',
   },
-  infoValue: {
+  gridLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  gridValue: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#e2e8f0',
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
   connected: {
-    color: '#4ade80',
+    color: '#10B981',
   },
   disconnected: {
-    color: '#f87171',
+    color: '#EF4444',
   },
-  button: {
-    backgroundColor: '#0ea5e9',
-    padding: 15,
-    borderRadius: 12,
+  actionsContainer: {
+    marginTop: 10,
+    marginBottom: 30,
+  },
+  primaryButton: {
+    backgroundColor: '#0EA5E9',
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  loadingRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  secondaryButton: {
+    marginTop: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#38BDF8',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  resultsWrapper: {
     marginTop: 10,
   },
-  exportButton: {
-    backgroundColor: '#10b981',
+  throughputCard: {
+    flexDirection: 'row',
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#334155',
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
-  buttonRow: {
+  speedBox: {
+    alignItems: 'center',
+  },
+  speedDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#334155',
+  },
+  speedLabel: {
+    fontSize: 13,
+    color: '#94A3B8',
+    fontWeight: '600',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  speedValue: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#10B981',
+  },
+  speedUnit: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  pingContainer: {
+    marginTop: 10,
+  },
+  pingCard: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#0EA5E9',
+  },
+  pingHost: {
+    color: '#E2E8F0',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  pingMetrics: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  buttonDisabled: {
-    backgroundColor: '#475569',
+  pingMetricBox: {
+    alignItems: 'flex-start',
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  resultsContainer: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
-  },
-  resultsTitle: {
-    fontSize: 16,
-    color: '#94a3b8',
-    marginBottom: 10,
+  pingMetricLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginBottom: 4,
+    textTransform: 'uppercase',
     fontWeight: '600',
   },
-  resultBlock: {
-    backgroundColor: '#0f172a',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
+  pingMetricValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
-  hostName: {
-    color: '#38bdf8',
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statLine: {
-    color: '#cbd5e1',
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  highlight: {
-    color: '#4ade80',
-    fontWeight: 'bold',
+  lossWarning: {
+    color: '#F59E0B',
   },
   contentArea: {
     flex: 1,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
+    backgroundColor: '#0F172A',
     borderTopWidth: 1,
-    borderTopColor: '#334155',
-    paddingBottom: 20,
-    paddingTop: 10,
+    borderTopColor: '#1E293B',
+    paddingBottom: 24,
+    paddingTop: 12,
   },
   tab: {
     flex: 1,
@@ -398,16 +491,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   activeTab: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#38bdf8',
+    // No background, just a colored underline and text
   },
   tabText: {
-    color: '#94a3b8',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
   },
   activeTabText: {
-    color: '#38bdf8',
-    fontWeight: 'bold',
+    color: '#38BDF8',
+    fontWeight: '800',
   }
 });
